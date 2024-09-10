@@ -7,7 +7,7 @@ ENV PAPER_BUILD 76
 ENV MEMORY_SIZE 2G
 
 # Install packages
-RUN apt update && apt install -y openjdk-21-jre-headless curl && apt clean
+RUN apt update && apt install -y openjdk-21-jre-headless curl screen && apt clean
 
 # Create the directory for Minecraft
 RUN mkdir -p /minecraft
