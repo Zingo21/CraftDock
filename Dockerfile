@@ -3,7 +3,7 @@ FROM ubuntu:22.04
 
 # Set environment variables
 ENV MINECRAFT_VERSION 1.21.1
-ENV PAPER_BUILD 74
+ENV PAPER_BUILD 76
 ENV MEMORY_SIZE 2G
 
 # Install packages
