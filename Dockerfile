@@ -19,7 +19,7 @@ WORKDIR /minecraft
 RUN curl -o /tmp/paper.jar -L https://papermc.io/api/v2/projects/paper/versions/$MINECRAFT_VERSION/builds/$PAPER_BUILD/downloads/paper-$MINECRAFT_VERSION-$PAPER_BUILD.jar
 
 # Accept EULA
-RUN echo "eula=true" > eula.txt
+RUN echo "eula=true" > /tmp/eula.txt
 
 # Expose port
 EXPOSE 25565
