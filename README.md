@@ -1,11 +1,15 @@
 # Craftdock
 
-# How to make a user a server OP or run any commands in the minecraft server
+## Run the server
+
+Simply run `docker run -d -p 25565:25565 -v ~/<data-directory-on-host>:/minecraft -e MEMORY_SIZE=4G --name <container-name> craftdock`
+
+## How to make a user a server OP or run any commands in the minecraft server
 
 Attach to the docker container using `docker exec -it <container-name> /bin/bash`
 To get to the CLI of the minecraft server, use `screen -r server`
 
-You can alternatively go directly to the CLI by doing `docker exec -it dank-minecraft-server screen -r server`and execute commands.
+You can alternatively go directly to the CLI by doing `docker exec -it <container-name> screen -r server`and execute commands.
 
 From here on, you can now execute commands on the minecraft server
 
