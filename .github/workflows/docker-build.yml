@@ -33,6 +33,11 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/craftdock:latest
             ${{ secrets.DOCKER_USERNAME }}/craftdock:${{ env.TAG_NAME }}
 
+      - name: Verify Docker image existence
+        run: |
+          docker pull ${{ secrets.DOCKER_USERNAME }}/craftdock:latest
+          docker pull ${{ secrets.DOCKER_USERNAME }}/craftdock:${{ env.TAG_NAME }}
+
       - name: Save Docker image
         run: |
           docker save ${{ secrets.DOCKER_USERNAME }}/craftdock:latest -o craftdock-latest.tar
