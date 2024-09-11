@@ -27,11 +27,14 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/craftdock:latest
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/craftdock:latest
+            ${{ secrets.DOCKER_USERNAME }}/craftdock:${{ github.ref }}
 
       - name: Save Docker image
         run: |
           docker save ${{ secrets.DOCKER_USERNAME }}/craftdock:latest -o craftdock-latest.tar
+          docker save ${{ secrets.DOCKER_USERNAME }}/craftdock:${{ github.ref }} -o craftdock-${{ github.ref }}.tar
       
       - name: Create Github Release
         id: create_release
@@ -44,7 +47,7 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload image asset to Github
+      - name: Upload latest image asset to Github
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -52,4 +55,14 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./craftdock-latest.tar
           asset_name: craftdock-latest.tar
-          asset_content_type: application/octet-stream
+          asset_content_type: application/x-tar
+
+      - name: Upload versioned image asset to Github
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./craftdock-${{ github.ref }}.tar
+          asset_name: craftdock-${{ github.ref }}.tar
+          asset_content_type: application/x-tar
