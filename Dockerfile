@@ -16,7 +16,7 @@ RUN mkdir -p /minecraft
 WORKDIR /minecraft
 
 # Download PaperMC
-RUN curl -o paper.jar -L https://papermc.io/api/v2/projects/paper/versions/$MINECRAFT_VERSION/builds/$PAPER_BUILD/downloads/paper-$MINECRAFT_VERSION-$PAPER_BUILD.jar
+RUN curl -o /tmp/paper.jar -L https://papermc.io/api/v2/projects/paper/versions/$MINECRAFT_VERSION/builds/$PAPER_BUILD/downloads/paper-$MINECRAFT_VERSION-$PAPER_BUILD.jar
 
 # Accept EULA
 RUN echo "eula=true" > eula.txt
@@ -25,10 +25,14 @@ RUN echo "eula=true" > eula.txt
 EXPOSE 25565
 
 # Copy plugins
-COPY plugins/ /minecraft/plugins/
+COPY plugins/ /tmp/plugins/
 
 # Define a volume for the server data
 VOLUME /minecraft
 
-# Start server
-CMD java -Xms$MEMORY_SIZE -Xmx$MEMORY_SIZE -jar paper.jar nogui
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Set entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
