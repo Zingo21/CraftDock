@@ -2,8 +2,8 @@ name: Build and push Docker image
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*.*.*'
     workflow_dispatch:
 
 jobs:
@@ -28,3 +28,28 @@ jobs:
         with:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/craftdock:latest
+
+      - name: Save Docker image
+        run: |
+          docker save ${{ secrets.DOCKER_USERNAME }}/craftdock:latest -o craftdock-latest.tar
+      
+      - name: Create Github Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload image asset to Github
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./craftdock-latest.tar
+          asset_name: craftdock-latest.tar
+          asset_content_type: application/octet-stream
