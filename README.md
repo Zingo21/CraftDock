@@ -2,7 +2,7 @@
 
 ## Run the server
 
-Simply run `docker run -d -p 25565:25565 -v ~/<data-directory-on-host>:/minecraft -e MEMORY_SIZE=4G --name <container-name> craftdock`
+To download and run the minecraft server, run `docker run -d -p 25565:25565 -v ~/<data-directory-on-host>:/minecraft -e MEMORY_SIZE=4G --name <container-name> zingo21/craftdock:latest`
 
 ## How to make a user a server OP or run any commands in the minecraft server
 
