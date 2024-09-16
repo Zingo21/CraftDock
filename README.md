@@ -4,9 +4,11 @@ A minecraft server in a docker container
 
 ## How to run the server
 
-To download and run the minecraft server, run `docker run -d -p 25565:25565 -v ~/<data-directory-on-host>:/minecraft -e MEMORY_SIZE=4G --name <container-name> zingo21/craftdock:latest`
+To download and run the minecraft server, run `docker run -d -p 25565:25565 -v ~/<data-directory-on-host>:/minecraft --name <container-name> zingo21/craftdock:latest`
 
-It is possible to change the Memory size of the server as with the minecraft version and build.
+This command will pull the container image and create the container and run with 2GB of RAM on the server.
+
+It is possible to change the memory size of the server as with the minecraft version and build.
 
 For example, if you want the server to run with 4GB of RAM simply add to the docker run command: `-e MEMORY_SIZE=4G` to set the server memory size to 4GB.
 
