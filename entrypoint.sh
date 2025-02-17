@@ -32,6 +32,10 @@ fi
 # Create log directory if it doesn't exist
 mkdir -p /minecraft/logs
 
+# Set correct permissions for all files and directories
+chown -R $(id -u):$(id -g) /minecraft
+chmod -R 755 /minecraft
+
 # Start the Minecraft server in a screen session
 screen -dmS server java -Xms${MEMORY_SIZE} -Xmx${MEMORY_SIZE} -jar /minecraft/paper.jar nogui > /minecraft/logs/latest.log 2>&1
 
