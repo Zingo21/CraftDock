@@ -6,6 +6,9 @@ ENV MINECRAFT_VERSION 1.21.4
 ENV PAPER_BUILD 118
 ENV MEMORY_SIZE 2G
 
+# Full update and upgrade
+RUN apt update && apt full-upgrade -y && apt clean
+
 # Install packages
 RUN apt update && apt install -y openjdk-21-jre-headless curl screen && apt clean
 
