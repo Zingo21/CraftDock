@@ -43,6 +43,22 @@ jobs:
           docker save ${{ secrets.DOCKER_USERNAME }}/craftdock:latest -o craftdock-latest.tar
           docker save ${{ secrets.DOCKER_USERNAME }}/craftdock:${{ env.TAG_NAME }} -o craftdock-${{ env.TAG_NAME }}.tar
       
+      - name: Get previous tag
+        id: prev_tag
+        run: echo "PREV_TAG=$(git describe --tags --abbrev=0 HEAD^)" >> $GITHUB_ENV
+
+      - name: Generate release notes
+        id: generate_release_notes
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            const prevTag = process.env.PREV_TAG;
+            const tagName = process.env.TAG_NAME;
+            const commitMessages = execSync(`git log ${prevTag}..${tagName} --pretty=format:'* %s by @%an in %h'`).toString();
+            const changelog = `## What's Changed\n${commitMessages}\n\n**Full Changelog**: https://github.com/${{ github.repository }}/compare/${prevTag}...${tagName}`;
+            return changelog;
+
       - name: Create Github Release
         id: create_release
         uses: actions/create-release@v1
