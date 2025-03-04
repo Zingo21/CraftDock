@@ -45,7 +45,10 @@ jobs:
       
       - name: Get previous tag
         id: prev_tag
-        run: echo "PREV_TAG=$(git describe --tags --abbrev=0 HEAD^)" >> $GITHUB_ENV
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 $(git rev-list --tags --skip=1 --max-count=1) 2>/dev/null || echo "")
+          echo "Previous tag: $PREV_TAG"
+          echo "prev_tag=$PREV_TAG" >> $GITHUB_ENV
 
       - name: Generate release notes
         id: generate_release_notes
