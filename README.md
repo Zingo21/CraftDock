@@ -1,6 +1,6 @@
 # Craftdock
 
-A minecraft server in a docker container
+A Minecraft server in a docker container
 
 ## How to run the server
 
