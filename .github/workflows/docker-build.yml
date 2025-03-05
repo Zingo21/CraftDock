@@ -59,7 +59,7 @@ jobs:
 
           if [ -n "$PREV_TAG" ]; then
             git log --merges --pretty=format:"%H" $PREV_TAG..HEAD | while read commit_hash; do
-              PR=$(git log -1 --pretty=format:"%b" $commit_hash | grep -oE "#[0-9]+")
+              PR=$(git log -1 --pretty=format:"%s %b" $commit_hash | grep -oE "#[0-9]+" | head -n 1)
               TITLE=$(git log -1 --pretty=format:"%s" $commit_hash)
               AUTHOR=$(git log -1 --pretty=format:"%an" $commit_hash)
 
@@ -72,18 +72,13 @@ jobs:
           echo "" >> release_notes.md
           echo "**Full Changelog:** https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${{ github.ref_name }}" >> release_notes.md
 
-          cat release_notes.md
-          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
-          cat release_notes.md >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
-          body: ${{ env.CHANGELOG }}
+          body_path: release_notes.md
           draft: false
           prerelease: false
           files: |
