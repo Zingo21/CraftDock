@@ -25,9 +25,15 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
+          load: true
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/craftdock:latest
             ${{ secrets.DOCKER_USERNAME }}/craftdock:${{ github.ref_name }}
+
+      - name: Pull Docker image
+        run: |
+          docker pull ${{ secrets.DOCKER_USERNAME }}/craftdock:latest || true
+          docker pull ${{ secrets.DOCKER_USERNAME }}/craftdock:${{ github.ref_name }} || true
 
       - name: Save Docker image
         run: |
