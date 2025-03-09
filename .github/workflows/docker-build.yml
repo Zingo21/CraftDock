@@ -35,6 +35,9 @@ jobs:
           docker pull ${{ secrets.DOCKER_USERNAME }}/craftdock:latest || true
           docker pull ${{ secrets.DOCKER_USERNAME }}/craftdock:${{ github.ref_name }} || true
 
+      - name: Verify Docker images exist
+        run: docker images | grep ${{ secrets.DOCKER_USERNAME }}/craftdock || echo "Image not found!"
+
       - name: Save Docker image
         run: |
           docker save ${{ secrets.DOCKER_USERNAME }}/craftdock:latest -o craftdock-latest.tar
@@ -43,7 +46,11 @@ jobs:
       - name: Get previous tag
         id: prev_tag
         run: |
-          PREV_TAG=$(git tag --list 'v*.*.*' --sort=-v:refname | sed -n '2p' || echo "")
+          PREV_TAG=$(git tag --list 'v*.*.*' --sort=-v:refname | sed -n '2p')
+          if [ -z "$PREV_TAG" ]; then
+            echo "No previous tag found, setting to initial commit"
+            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
           echo "Previous tag: $PREV_TAG"
           echo "prev_tag=$PREV_TAG" >> $GITHUB_ENV
 
@@ -54,22 +61,19 @@ jobs:
           echo "## What's Changed" > release_notes.md
 
           if [ -n "$PREV_TAG" ]; then
-            git log --merges --pretty=format:"%b" $PREV_TAG..HEAD | grep -oE "#[0-9]+" | sort -u | while read pr; do
-              echo "- PR $pr by @$(git log --merges --grep="$pr" --pretty=format:'%an' -1) in https://github.com/${{ github.repository }}/pull/${pr#\#}"
-            done >> release_notes.md
-          else
-            git log --merges --pretty=format:"%b" | grep -oE "#[0-9]+" | sort -u | while read pr; do
-              echo "- PR $pr by @$(git log --merges --grep="$pr" --pretty=format:'%an' -1) in https://github.com/${{ github.repository }}/pull/${pr#\#}"
-            done >> release_notes.md
+            git log --merges --pretty=format:"%H" $PREV_TAG..HEAD | while read commit_hash; do
+              PR=$(git log -1 --pretty=format:"%s %b" $commit_hash | grep -oE "#[0-9]+" | head -n 1)
+              TITLE=$(git log -1 --pretty=format:"%s" $commit_hash)
+              AUTHOR=$(git log -1 --pretty=format:"%an" $commit_hash)
+
+              if [ -n "$PR" ]; then
+                echo "- **$TITLE** (#${PR#\#}) by @$AUTHOR in https://github.com/${{ github.repository }}/pull/${PR#\#}" >> release_notes.md
+              fi
+            done
           fi
 
           echo "" >> release_notes.md
           echo "**Full Changelog:** https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${{ github.ref_name }}" >> release_notes.md
-
-          cat release_notes.md
-          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
-          cat release_notes.md >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
 
       - name: Create GitHub Release
         id: create_release
@@ -77,7 +81,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
-          body: ${{ env.CHANGELOG }}
+          body_path: release_notes.md
           draft: false
           prerelease: false
           files: |
