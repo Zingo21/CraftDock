@@ -35,6 +35,9 @@ jobs:
           docker pull ${{ secrets.DOCKER_USERNAME }}/craftdock:latest || true
           docker pull ${{ secrets.DOCKER_USERNAME }}/craftdock:${{ github.ref_name }} || true
 
+      - name: Verify Docker images exist
+        run: docker images | grep ${{ secrets.DOCKER_USERNAME }}/craftdock || echo "Image not found!"
+
       - name: Save Docker image
         run: |
           docker save ${{ secrets.DOCKER_USERNAME }}/craftdock:latest -o craftdock-latest.tar
