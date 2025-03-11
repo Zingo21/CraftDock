@@ -59,22 +59,24 @@ jobs:
         run: |
           PREV_TAG="${{ env.prev_tag }}"
           echo "## What's Changed" > release_notes.md
-
+      
           if [ -n "$PREV_TAG" ]; then
             git log --merges --pretty=format:"%H" $PREV_TAG..HEAD | while read commit_hash; do
               PR=$(git log -1 --pretty=format:"%s %b" $commit_hash | grep -oE "#[0-9]+" | head -n 1)
               TITLE=$(git log -1 --pretty=format:"%s" $commit_hash)
               AUTHOR=$(git log -1 --pretty=format:"%an" $commit_hash)
-
+      
               if [ -n "$PR" ]; then
                 echo "- **$TITLE** by @$AUTHOR in https://github.com/${{ github.repository }}/pull/${PR#\#}" >> release_notes.md
               fi
             done
           fi
-
+      
           echo "" >> release_notes.md
           echo "**Full Changelog:** https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${{ github.ref_name }}" >> release_notes.md
-
+        env:
+          prev_tag: ${{ steps.prev_tag.outputs.prev_tag }}
+          
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
