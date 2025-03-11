@@ -67,7 +67,7 @@ jobs:
               AUTHOR=$(git log -1 --pretty=format:"%an" $commit_hash)
 
               if [ -n "$PR" ]; then
-                echo "- **$TITLE** (#${PR#\#}) by @$AUTHOR in https://github.com/${{ github.repository }}/pull/${PR#\#}" >> release_notes.md
+                echo "- **$TITLE** by @$AUTHOR in https://github.com/${{ github.repository }}/pull/${PR#\#}" >> release_notes.md
               fi
             done
           fi
