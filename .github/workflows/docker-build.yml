@@ -1,3 +1,5 @@
+name: Docker Build and Publish
+
 on:
   push:
     tags:
