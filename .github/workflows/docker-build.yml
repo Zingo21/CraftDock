@@ -43,14 +43,35 @@ jobs:
           docker save ${{ secrets.DOCKER_USERNAME }}/craftdock:latest -o craftdock-latest.tar
           docker save ${{ secrets.DOCKER_USERNAME }}/craftdock:${{ github.ref_name }} -o craftdock-${{ github.ref_name }}.tar
 
+      - name: Get previous tag
+        id: prev_tag
+        run: |
+          PREV_TAG=$(git tag --list 'v*.*.*' --sort=-v:refname | sed -n '2p')
+          if [ -z "$PREV_TAG" ]; then
+            echo "No previous tag found, setting to initial commit"
+            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          echo "Previous tag: $PREV_TAG"
+          echo "prev_tag=$PREV_TAG" >> $GITHUB_ENV
+
       - name: Generate Changelog
-        uses: release-changelog-builder/action@v1
+        id: changelog
+        uses: actions/github-script@v6
+        env:
+          prev_tag: ${{ steps.prev_tag.outputs.prev_tag }}
         with:
-          owner: "${{ github.repository_owner }}"
-          repo: "${{ github.repository }}"
-          fromTag: "${{ github.event.inputs.previous_tag || 'v0.0.0' }}"
-          toTag: "${{ github.ref_name }}"
-          outputFile: "release_notes.md"
+          script: |
+            const { execSync } = require('child_process');
+            const prevTag = process.env.prev_tag;
+            const tagName = process.env.GITHUB_REF_NAME;
+            let commitMessages = "";
+            try {
+              commitMessages = execSync(`git log ${prevTag}..HEAD --merges --pretty=format:'* %s by @%an in %h'`).toString();
+            } catch (error) {
+              console.log("No commits found between tags");
+            }
+            const changelog = `## What's Changed\n${commitMessages}\n\n**Full Changelog**: https://github.com/${{ github.repository }}/compare/${prevTag}...${tagName}`;
+            core.setOutput("changelog", changelog);
 
       - name: Create GitHub Release
         id: create_release
@@ -58,7 +79,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
-          body_path: release_notes.md
+          body: ${{ steps.changelog.outputs.changelog }}
           draft: false
           prerelease: false
           files: |
