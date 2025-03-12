@@ -56,22 +56,10 @@ jobs:
 
       - name: Generate Changelog
         id: changelog
-        uses: actions/github-script@v6
-        env:
-          prev_tag: ${{ steps.prev_tag.outputs.prev_tag }}
+        uses: janheinrichmerker/action-github-changelog-generator@v2.3
         with:
-          script: |
-            const { execSync } = require('child_process');
-            const prevTag = process.env.prev_tag;
-            const tagName = process.env.GITHUB_REF_NAME;
-            let commitMessages = "";
-            try {
-              commitMessages = execSync(`git log ${prevTag}..HEAD --merges --pretty=format:'* %s by @%an in %h'`).toString();
-            } catch (error) {
-              console.log("No commits found between tags");
-            }
-            const changelog = `## What's Changed\n${commitMessages}\n\n**Full Changelog**: https://github.com/${{ github.repository }}/compare/${prevTag}...${tagName}`;
-            core.setOutput("changelog", changelog);
+          token: ${{ secrets.GITHUB_TOKEN }}
+          prev_tag: ${{ steps.prev_tag.outputs.prev_tag }}
 
       - name: Create GitHub Release
         id: create_release
