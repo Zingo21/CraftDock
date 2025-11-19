@@ -1,5 +1,5 @@
 # Use Ubuntu as base image
-FROM ubuntu:24.10
+FROM ubuntu:25.10
 
 # Set environment variables
 ENV MINECRAFT_VERSION 1.21.4
