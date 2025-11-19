@@ -34,6 +34,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set lowercased owner
+        id: owner
+        run: |
+          OWNER=$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f1)
+          OWNER_LOWER=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
+          echo "owner_lower=$OWNER_LOWER" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -42,8 +49,8 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/craftdock:latest
             ${{ secrets.DOCKER_USERNAME }}/craftdock:${{ github.ref_name }}
-            ghcr.io/${{ github.repository_owner }}/craftdock:latest
-            ghcr.io/${{ github.repository_owner }}/craftdock:${{ github.ref_name }}
+            ghcr.io/${{ steps.owner.outputs.owner_lower }}/craftdock:latest
+            ghcr.io/${{ steps.owner.outputs.owner_lower }}/craftdock:${{ github.ref_name }}
 
       - name: Pull Docker image
         run: |
