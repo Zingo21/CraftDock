@@ -1,5 +1,9 @@
 name: Docker Build and Publish
 
+permissions:
+  contents: write
+  packages: write
+
 on:
   push:
     tags:
@@ -23,6 +27,13 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -31,6 +42,8 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/craftdock:latest
             ${{ secrets.DOCKER_USERNAME }}/craftdock:${{ github.ref_name }}
+            ghcr.io/${{ github.repository_owner }}/craftdock:latest
+            ghcr.io/${{ github.repository_owner }}/craftdock:${{ github.ref_name }}
 
       - name: Pull Docker image
         run: |
@@ -44,6 +57,35 @@ jobs:
         run: |
           docker save ${{ secrets.DOCKER_USERNAME }}/craftdock:latest -o craftdock-latest.tar
           docker save ${{ secrets.DOCKER_USERNAME }}/craftdock:${{ github.ref_name }} -o craftdock-${{ github.ref_name }}.tar
+
+      - name: Make GHCR package public
+        if: always()
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PKG="${GITHUB_REPOSITORY#*/}"
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          API_ORG="https://api.github.com/orgs/${OWNER}/packages/container/${PKG}/visibility"
+          API_USER="https://api.github.com/user/packages/container/${PKG}/visibility"
+          echo "Package: $PKG, Owner: $OWNER"
+          for API in "$API_ORG" "$API_USER"; do
+            echo "Trying $API"
+            HTTP=$(curl -s -o /tmp/resp -w "%{http_code}" -X PATCH \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -d '{"visibility":"public"}' \
+              "$API" || true)
+            echo "HTTP $HTTP"
+            if [ "$HTTP" = "200" ] || [ "$HTTP" = "201" ]; then
+              echo "Success setting visibility via $API"
+              cat /tmp/resp || true
+              exit 0
+            fi
+            echo "Response:"; cat /tmp/resp || true
+          done
+          echo "Failed to set package visibility with GITHUB_TOKEN. If this step fails, add a PAT with 'packages:write' in a secret (e.g. GPR_PAT) and use it in a fallback step."
+          exit 0
 
       - name: Get previous tag
         id: prev_tag
