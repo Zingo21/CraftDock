@@ -32,8 +32,7 @@ fi
 # Create log directory if it doesn't exist
 mkdir -p /minecraft/logs
 
-# Start the Minecraft server in a screen session
-screen -dmS server java -Xms${MEMORY_SIZE} -Xmx${MEMORY_SIZE} -jar /minecraft/paper.jar nogui > /minecraft/logs/latest.log 2>&1
-
-# Keep the container running and tail the log file
-tail -f /minecraft/logs/latest.log
+# Run the Minecraft server in the foreground (exec replaces the shell so Java
+# becomes PID 1, Docker signals are forwarded correctly, and logs stream to
+# docker logs).
+exec java -Xms${MEMORY_SIZE} -Xmx${MEMORY_SIZE} -jar /minecraft/paper.jar nogui
