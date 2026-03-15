@@ -1,0 +1,173 @@
+#!/usr/bin/env python3
+import argparse
+import os
+import re
+import socket
+import struct
+import sys
+
+
+DEFAULT_HOST = "127.0.0.1"
+DEFAULT_PORT = 25575
+AUTH_TYPE = 3
+COMMAND_TYPE = 2
+
+
+def recvn(sock: socket.socket, size: int) -> bytes:
+    data = b""
+    while len(data) < size:
+        chunk = sock.recv(size - len(data))
+        if not chunk:
+            raise ConnectionError("Connection closed by RCON server")
+        data += chunk
+    return data
+
+
+def recv_packet(sock: socket.socket):
+    header = recvn(sock, 4)
+    (length,) = struct.unpack("<i", header)
+    if length < 10:
+        raise ValueError("Malformed RCON packet")
+    payload = recvn(sock, length)
+    request_id, packet_type = struct.unpack("<ii", payload[:8])
+    body = payload[8:-2].decode("utf-8", errors="replace")
+    return request_id, packet_type, body
+
+
+def send_packet(sock: socket.socket, request_id: int, packet_type: int, body: str):
+    body_bytes = body.encode("utf-8")
+    length = 4 + 4 + len(body_bytes) + 2
+    packet = struct.pack("<iii", length, request_id, packet_type) + body_bytes + b"\x00\x00"
+    sock.sendall(packet)
+
+
+def strip_color_codes(text: str) -> str:
+    return re.sub(r"§[0-9a-fk-orA-FK-OR]", "", text)
+
+
+def parse_server_properties(path: str):
+    props = {}
+    if not os.path.exists(path):
+        return props
+
+    with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            props[key.strip()] = value.strip()
+
+    return props
+
+
+def resolve_password(cli_password: str, props: dict) -> str:
+    if cli_password:
+        return cli_password
+
+    env_password = os.environ.get("RCON_PASSWORD", "")
+    if env_password:
+        return env_password
+
+    file_password = props.get("rcon.password", "")
+    if file_password:
+        return file_password
+
+    raise SystemExit(
+        "RCON password is missing. Set RCON_PASSWORD, pass --password, or configure rcon.password in /minecraft/server.properties."
+    )
+
+
+def resolve_port(cli_port: int, props: dict) -> int:
+    if cli_port:
+        return cli_port
+
+    env_port = os.environ.get("RCON_PORT", "")
+    if env_port.isdigit():
+        return int(env_port)
+
+    file_port = props.get("rcon.port", "")
+    if file_port.isdigit():
+        return int(file_port)
+
+    return DEFAULT_PORT
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog="mc-cmd",
+        description="Send a command to the running Minecraft server through RCON.",
+    )
+    parser.add_argument("--host", default=DEFAULT_HOST, help="RCON host (default: 127.0.0.1)")
+    parser.add_argument("--port", type=int, default=0, help="RCON port (default: RCON_PORT env, then server.properties, then 25575)")
+    parser.add_argument("--password", default="", help="RCON password (default: RCON_PASSWORD env or server.properties)")
+    parser.add_argument(
+        "command",
+        nargs=argparse.REMAINDER,
+        help="Minecraft console command to run, for example: op PlayerName",
+    )
+    args = parser.parse_args()
+
+    command_parts = args.command
+    if command_parts and command_parts[0] == "--":
+        command_parts = command_parts[1:]
+
+    if not command_parts:
+        raise SystemExit("No command provided. Example: mc-cmd op PlayerName")
+
+    command = " ".join(command_parts).strip()
+    if not command:
+        raise SystemExit("Command cannot be empty")
+
+    props = parse_server_properties("/minecraft/server.properties")
+    if props.get("enable-rcon", "").lower() != "true":
+        raise SystemExit(
+            "RCON is not enabled. Start the container with ENABLE_RCON=true and RCON_PASSWORD=<password>."
+        )
+
+    password = resolve_password(args.password, props)
+    port = resolve_port(args.port, props)
+
+    try:
+        with socket.create_connection((args.host, port), timeout=5) as sock:
+            sock.settimeout(5)
+
+            auth_request_id = 11
+            send_packet(sock, auth_request_id, AUTH_TYPE, password)
+            response_id, _, _ = recv_packet(sock)
+            if response_id == -1:
+                raise SystemExit("RCON authentication failed. Check RCON password.")
+
+            command_request_id = 12
+            send_packet(sock, command_request_id, COMMAND_TYPE, command)
+
+            output_chunks = []
+            response_id, _, body = recv_packet(sock)
+            if response_id == -1:
+                raise SystemExit("RCON command failed")
+            output_chunks.append(body)
+
+            sock.settimeout(0.2)
+            while True:
+                try:
+                    response_id, _, body = recv_packet(sock)
+                except (socket.timeout, ConnectionError):
+                    break
+
+                if response_id == command_request_id:
+                    output_chunks.append(body)
+
+            output = strip_color_codes("".join(output_chunks)).strip()
+            if output:
+                print(output)
+
+    except ConnectionRefusedError:
+        raise SystemExit(
+            f"Cannot connect to RCON on {args.host}:{port}. Ensure the server is running and RCON is enabled."
+        )
+    except socket.timeout:
+        raise SystemExit("Timed out while communicating with RCON")
+
+
+if __name__ == "__main__":
+    main()
