@@ -3,7 +3,7 @@ FROM ubuntu:25.10
 
 # Set environment variables
 ENV MINECRAFT_VERSION=1.21.10
-ENV PAPER_BUILD=130
+ENV PAPER_BUILD=129
 ENV MEMORY_SIZE=2G
 
 # Full update and upgrade
@@ -19,7 +19,7 @@ RUN mkdir -p /minecraft
 WORKDIR /minecraft
 
 # Download PaperMC
-RUN curl -o /tmp/paper.jar -L https://papermc.io/api/v2/projects/paper/versions/$MINECRAFT_VERSION/builds/$PAPER_BUILD/downloads/paper-$MINECRAFT_VERSION-$PAPER_BUILD.jar
+RUN curl -fSL -o /tmp/paper.jar https://api.papermc.io/v2/projects/paper/versions/$MINECRAFT_VERSION/builds/$PAPER_BUILD/downloads/paper-$MINECRAFT_VERSION-$PAPER_BUILD.jar
 
 # Accept EULA
 RUN echo "eula=true" > /tmp/eula.txt
