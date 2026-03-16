@@ -3,7 +3,7 @@ FROM ubuntu:25.10
 
 # Set environment variables
 ENV MINECRAFT_VERSION=1.21.10
-ENV PAPER_BUILD=115
+ENV PAPER_BUILD=129
 ENV MEMORY_SIZE=2G
 
 # Full update and upgrade
