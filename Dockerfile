@@ -2,8 +2,8 @@
 FROM ubuntu:25.10
 
 # Set environment variables
-ENV MINECRAFT_VERSION=1.21.10
-ENV PAPER_BUILD=129
+ENV MINECRAFT_VERSION=1.21.11
+ENV PAPER_BUILD=127
 ENV MEMORY_SIZE=2G
 ENV ENABLE_RCON=false
 ENV RCON_PORT=25575
@@ -24,7 +24,10 @@ RUN mkdir -p /minecraft && chown -R minecraft:minecraft /minecraft
 WORKDIR /minecraft
 
 # Download PaperMC
-RUN curl -fSL -o /tmp/paper.jar https://api.papermc.io/v2/projects/paper/versions/$MINECRAFT_VERSION/builds/$PAPER_BUILD/downloads/paper-$MINECRAFT_VERSION-$PAPER_BUILD.jar
+RUN set -eu; \
+	metadata_url="https://fill.papermc.io/v3/projects/paper/versions/${MINECRAFT_VERSION}/builds/${PAPER_BUILD}"; \
+	download_url="$(curl -fSL "${metadata_url}" | python3 -c "import json,sys; print(json.load(sys.stdin)['downloads']['server:default']['url'])")"; \
+	curl -fSL -o /tmp/paper.jar "${download_url}"
 
 # Accept EULA
 RUN echo "eula=true" > /tmp/eula.txt

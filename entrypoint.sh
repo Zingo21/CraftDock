@@ -73,9 +73,14 @@ if [ "$CLEAR_DATA" = "true" ]; then
     rm -rf /minecraft/*
 fi
 
-# Copy necessary files to the volume directory if they don't exist
-if [ ! -f /minecraft/paper.jar ]; then
-    cp /tmp/paper.jar /minecraft/
+# Copy necessary files to the volume directory.
+# If paper.jar exists but is invalid (for example an old HTML payload from a
+# failed download), replace it with the known-good image copy.
+if [ ! -f /minecraft/paper.jar ] || [ "$(head -c 2 /minecraft/paper.jar 2>/dev/null)" != "PK" ]; then
+    if [ -f /minecraft/paper.jar ]; then
+        echo "Detected invalid /minecraft/paper.jar; replacing it from image copy..."
+    fi
+    cp /tmp/paper.jar /minecraft/paper.jar
 fi
 
 if [ ! -f /minecraft/eula.txt ]; then
