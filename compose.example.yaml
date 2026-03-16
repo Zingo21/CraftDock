@@ -1,0 +1,23 @@
+services:
+  craftdock:
+    image: zingo21/craftdock:latest
+    container_name: craftdock
+    restart: unless-stopped
+    ports:
+      - "25565:25565"
+      # Publish this only if you want to connect from an external RCON client.
+      # The mc-cmd helper can still use RCON internally without publishing 25575.
+      # - "25575:25575"
+    volumes:
+      - ./minecraft-data:/minecraft
+    environment:
+      MEMORY_SIZE: 2G
+      SERVER_MOTD: My Server
+      SERVER_MAX_PLAYERS: "10"
+      # Required for docker exec craftdock mc-cmd ...
+      # ENABLE_RCON: "true"
+      # RCON_PASSWORD: "change-me"
+      # RCON_PORT: "25575"
+    # Uncomment these if you want to use docker attach with the running service.
+    # stdin_open: true
+    # tty: true
